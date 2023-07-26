@@ -33,13 +33,38 @@ class OverlayPopUp {
   /// [width] is not required by default is MATCH_PARENT
   /// [alignment] is not required by default is CENTER for more info see: https://developer.android.com/reference/android/view/WindowManager.LayoutParams
   /// [backgroundBehavior] by default is focusable flag that is you can take focus inside a overlay for example inside a textfield and [tapThrough] you can tap through the overlay background even if has MATCH_PARENT sizes.
+  /// [screenOrientation] by default is portrait its param define the overlay orientation.
   ///
-  static Future<bool> showOverlay({int? height, int? width, Gravity? alignment, OverlayFlag? backgroundBehavior}) async {
+  static Future<bool> showOverlay({
+    int? height,
+    int? width,
+    Gravity? verticalAlignment,
+    Gravity? horizontalAlignment,
+    OverlayFlag? backgroundBehavior,
+    ScreenOrientation? screenOrientation,
+    bool? closeWhenTapBackButton = false,
+  }) async {
     final result = await _methodChannel.invokeMethod<bool?>('showOverlay', {
+      /// is not required by default is MATCH_PARENT
       'height': height,
+
+      /// is not required by default is MATCH_PARENT
       'width': width,
-      'alignment': alignment?.value,
+
+      /// is not required by default is CENTER for more info see: https://developer.android.com/reference/android/view/Gravity
+      'verticalAlignment': verticalAlignment?.value,
+
+      /// is not required by default is CENTER for more info see: https://developer.android.com/reference/android/view/Gravity
+      'horizontalAlignment': horizontalAlignment?.value,
+
+      /// by default is focusable flag that is you can take focus inside a overlay for example inside a textfield and [tapThrough] you can tap through the overlay background even if has MATCH_PARENT sizes.
       'backgroundBehavior': backgroundBehavior?.value,
+
+      /// by default is portrait its param define the overlay orientation.
+      'screenOrientation': screenOrientation?.value,
+
+      /// by default is false its param define if overlay will close when user tap back button.
+      'closeWhenTapBackButton': closeWhenTapBackButton,
     });
     return result ?? false;
   }
@@ -57,6 +82,23 @@ class OverlayPopUp {
   ///
   static Future<bool> isActive() async {
     final result = await _methodChannel.invokeMethod<bool?>('isActive');
+    return result ?? false;
+  }
+
+  ///
+  /// update overlay layout size
+  ///
+  static Future<bool> updateOverlaySize({
+    int? height,
+    int? width,
+  }) async {
+    final result = await _methodChannel.invokeMethod<bool?>('updateOverlaySize', {
+      /// the new value for layout height
+      'height': height,
+
+      /// the new value for layout width
+      'width': width,
+    });
     return result ?? false;
   }
 
@@ -118,4 +160,12 @@ enum OverlayFlag {
 
   final int value;
   const OverlayFlag(this.value);
+}
+
+enum ScreenOrientation {
+  landscape(0),
+  portrait(1);
+
+  final int value;
+  const ScreenOrientation(this.value);
 }

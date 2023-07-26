@@ -22,11 +22,11 @@ import io.flutter.plugin.common.MethodChannel
 class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?> {
     companion object {
         var isActive: Boolean = false
+        var windowManager: WindowManager? = null
+        lateinit var flutterView: FlutterView
     }
 
     private var channel: MethodChannel? = null
-    private var windowManager: WindowManager? = null
-    private lateinit var flutterView: FlutterView
     private lateinit var overlayMessageChannel: BasicMessageChannel<Any?>
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -41,9 +41,9 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?> {
         flutterView =
             object : FlutterView(applicationContext, FlutterTextureView(applicationContext)) {
                 override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-                    return if (event.keyCode == KeyEvent.KEYCODE_BACK) {
-                        stopService(Intent(baseContext, OverlayService::class.java))
+                    return if (event.keyCode == KeyEvent.KEYCODE_BACK && PopUp.closeWhenTapBackButton) {
                         windowManager?.removeView(flutterView)
+                        stopService(Intent(baseContext, OverlayService::class.java))
                         isActive = false
                         true
                     } else super.dispatchKeyEvent(event)
@@ -59,11 +59,11 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?> {
             PopUp.width,
             PopUp.height,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-            if (PopUp.backgroundBehavior == 1) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS and
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE and WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            if (PopUp.backgroundBehavior == 1) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSPARENT
         )
-        windowConfig.gravity = PopUp.alignment
+        windowConfig.gravity = PopUp.verticalAlignment or PopUp.horizontalAlignment
+        windowConfig.screenOrientation = PopUp.screenOrientation
         windowManager!!.addView(flutterView, windowConfig)
         isActive = true
     }

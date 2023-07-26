@@ -43,7 +43,14 @@ class _MyAppState extends State<MyApp> {
                   final permission = await OverlayPopUp.checkPermission();
                   if (permission) {
                     if (!await OverlayPopUp.isActive()) {
-                      isActive = await OverlayPopUp.showOverlay(alignment: Gravity.end, width: 300, height: 350);
+                      isActive = await OverlayPopUp.showOverlay(
+                        horizontalAlignment: Gravity.right,
+                        verticalAlignment: Gravity.center,
+                        width: 300,
+                        height: 350,
+                        screenOrientation: ScreenOrientation.portrait,
+                        closeWhenTapBackButton: true,
+                      );
                       setState(() {
                         isActive = isActive;
                       });
@@ -71,6 +78,15 @@ class _MyAppState extends State<MyApp> {
                 },
                 color: Colors.red[900],
                 child: const Text('Send data', style: TextStyle(color: Colors.white)),
+              ),
+              MaterialButton(
+                onPressed: () async {
+                  if (await OverlayPopUp.isActive()) {
+                    await OverlayPopUp.updateOverlaySize(width: 500, height: 500);
+                  }
+                },
+                color: Colors.red[900],
+                child: const Text('Update overlay size', style: TextStyle(color: Colors.white)),
               )
             ],
           ),

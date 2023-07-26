@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.view.WindowManager
 import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.embedding.engine.FlutterEngineGroup
@@ -41,7 +42,8 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         channel.setMethodCallHandler(this)
         this.context = flutterPluginBinding.applicationContext
         messageChannel = BasicMessageChannel<Any?>(
-            flutterPluginBinding.binaryMessenger, OVERLAY_MESSAGE_CHANNEL_NAME,
+            flutterPluginBinding.binaryMessenger,
+            OVERLAY_MESSAGE_CHANNEL_NAME,
             JSONMessageCodec.INSTANCE
         )
         messageChannel.setMessageHandler(this)
@@ -54,6 +56,7 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             "showOverlay" -> showOverlay(call, result)
             "closeOverlay" -> closeOverlay(result)
             "isActive" -> result.success(OverlayService.isActive)
+            "updateOverlaySize" -> updateOverlaySize(call, result)
             else -> result.notImplemented()
         }
     }
@@ -67,8 +70,7 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         activity = binding.activity
         val engineGroup = FlutterEngineGroup(context)
         val dartEntry = DartExecutor.DartEntrypoint(
-            FlutterInjector.instance().flutterLoader().findAppBundlePath(),
-            OVERLAY_POP_UP_ENTRY
+            FlutterInjector.instance().flutterLoader().findAppBundlePath(), OVERLAY_POP_UP_ENTRY
         )
         val engine = engineGroup.createAndRunEngine(context, dartEntry)
         FlutterEngineCache.getInstance().put(CACHE_ENGINE_ID, engine)
@@ -93,9 +95,14 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         i.flags = Intent.FLAG_ACTIVITY_NEW_TASK and Intent.FLAG_ACTIVITY_SINGLE_TOP
         PopUp.width = call.argument<Int>("width") ?: PopUp.width
         PopUp.height = call.argument<Int>("height") ?: PopUp.height
-        PopUp.alignment = call.argument<Int>("alignment") ?: PopUp.alignment
+        PopUp.verticalAlignment = call.argument<Int>("verticalAlignment") ?: PopUp.verticalAlignment
+        PopUp.horizontalAlignment =
+            call.argument<Int>("horizontalAlignment") ?: PopUp.horizontalAlignment
         PopUp.backgroundBehavior =
             call.argument<Int>("backgroundBehavior") ?: PopUp.backgroundBehavior
+        PopUp.screenOrientation = call.argument<Int>("screenOrientation") ?: PopUp.screenOrientation
+        PopUp.closeWhenTapBackButton =
+            call.argument<Boolean>("closeWhenTapBackButton") ?: PopUp.closeWhenTapBackButton
         activity.startService(i)
         result.success(true)
     }
@@ -119,6 +126,18 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             JSONMessageCodec.INSTANCE
         )
         overlayMessageChannel.send(message, reply)
+    }
+
+    private fun updateOverlaySize(call: MethodCall, result: Result) {
+        if (OverlayService.windowManager != null) {
+            val windowConfig = OverlayService.flutterView.layoutParams
+            windowConfig.width = call.argument("width") ?: WindowManager.LayoutParams.MATCH_PARENT
+            windowConfig.height = call.argument("height") ?: WindowManager.LayoutParams.MATCH_PARENT
+            OverlayService.windowManager!!.updateViewLayout(
+                OverlayService.flutterView, windowConfig
+            )
+            result.success(true)
+        } else result.notImplemented()
     }
 
     override fun onDetachedFromActivityForConfigChanges() {

@@ -58,8 +58,11 @@ void overlayPopUp() {
 
 - `height` is not required by default is MATCH_PARENT
 - `width` is not required by default is MATCH_PARENT
-- `alignment` is not required by default is CENTER for more info see: <https://developer.android.com/reference/android/view/WindowManager.LayoutParams>
+- `verticalAlignment` is not required by default is CENTER for more info see: <https://developer.android.com/reference/android/view/Gravity>
+- `horizontalAlignment` is not required by default is CENTER for more info see: <https://developer.android.com/reference/android/view/Gravity>
 - `backgroundBehavior` by default is focusable flag that is you can take focus inside a overlay for example inside a textfield and [tapThrough] you can tap through the overlay background even if has MATCH_PARENT sizes.
+- `screenOrientation` by default orientation is portrait.
+- `closeWhenTapBackButton` by default when user presses back button the overlay no has any action if you pass true then back button will close overlay.
 
   ```dart
   await OverlayPopUp.showOverlay();
