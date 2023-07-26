@@ -1,3 +1,7 @@
+## 0.0.4
+
+* fix some bugs
+
 ## 0.0.3
 
 * Added update overlay size method when overlay is displayed and added close when user tap in back button as new param `closeWhenTapBackButton` and added support for horizontal and vertical alignment
