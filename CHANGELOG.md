@@ -1,3 +1,7 @@
+## 0.0.5
+
+* now the overlay can be dragged
+
 ## 0.0.4
 
 * fix some bugs

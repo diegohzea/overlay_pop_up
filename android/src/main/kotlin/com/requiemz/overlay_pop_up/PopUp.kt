@@ -12,4 +12,5 @@ object PopUp {
     var backgroundBehavior = 1
     var screenOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     var closeWhenTapBackButton = false
+    var isDraggable = false
 }

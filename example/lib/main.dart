@@ -44,12 +44,11 @@ class _MyAppState extends State<MyApp> {
                   if (permission) {
                     if (!await OverlayPopUp.isActive()) {
                       isActive = await OverlayPopUp.showOverlay(
-                        horizontalAlignment: Gravity.right,
-                        verticalAlignment: Gravity.center,
                         width: 300,
                         height: 350,
                         screenOrientation: ScreenOrientation.portrait,
                         closeWhenTapBackButton: true,
+                        isDraggable: true,
                       );
                       setState(() {
                         isActive = isActive;

@@ -63,6 +63,7 @@ void overlayPopUp() {
 - `backgroundBehavior` by default is focusable flag that is you can take focus inside a overlay for example inside a textfield and [tapThrough] you can tap through the overlay background even if has MATCH_PARENT sizes.
 - `screenOrientation` by default orientation is portrait.
 - `closeWhenTapBackButton` by default when user presses back button the overlay no has any action if you pass true then back button will close overlay.
+- `isDraggable`  by default is false therefore the overlay can´t be dragged.
 
   ```dart
   await OverlayPopUp.showOverlay();

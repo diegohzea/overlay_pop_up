@@ -43,6 +43,7 @@ class OverlayPopUp {
     OverlayFlag? backgroundBehavior,
     ScreenOrientation? screenOrientation,
     bool? closeWhenTapBackButton = false,
+    bool? isDraggable = false,
   }) async {
     final result = await _methodChannel.invokeMethod<bool?>('showOverlay', {
       /// is not required by default is MATCH_PARENT
@@ -65,6 +66,9 @@ class OverlayPopUp {
 
       /// by default is false its param define if overlay will close when user tap back button.
       'closeWhenTapBackButton': closeWhenTapBackButton,
+
+      /// by default is false therefore the overlay can´t be dragged.
+      'isDraggable': isDraggable,
     });
     return result ?? false;
   }

@@ -1,5 +1,6 @@
 package com.requiemz.overlay_pop_up
 
+import android.annotation.SuppressLint
 import android.app.Service
 import android.content.Intent
 import android.graphics.Color
@@ -7,7 +8,10 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.View
 import android.view.WindowManager
+import android.view.WindowManager.LayoutParams
 import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterTextureView
 import io.flutter.embedding.android.FlutterView
@@ -19,7 +23,7 @@ import io.flutter.plugin.common.JSONMessageCodec
 import io.flutter.plugin.common.MethodChannel
 
 
-class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?> {
+class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View.OnTouchListener {
     companion object {
         var isActive: Boolean = false
         var windowManager: WindowManager? = null
@@ -33,6 +37,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?> {
         return null
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate() {
         super.onCreate()
         validateDartExecutor()
@@ -54,6 +59,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?> {
         )
         flutterView.fitsSystemWindows = true
         flutterView.setBackgroundColor(Color.TRANSPARENT)
+        flutterView.setOnTouchListener(this)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager?
         val windowConfig = WindowManager.LayoutParams(
             PopUp.width,
@@ -103,5 +109,41 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?> {
             JSONMessageCodec.INSTANCE
         )
         overlayMessageChannel.send(message, reply)
+    }
+
+    private var lastX = 0f
+    private var lastY = 0f
+    override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+        if (!PopUp.isDraggable) return false
+        val windowConfig = OverlayService.flutterView.layoutParams as LayoutParams
+        when (event?.action) {
+            MotionEvent.ACTION_DOWN -> {
+                lastX = event.rawX
+                lastY = event.rawY
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                val dx = event.rawX - lastX
+                val dy = event.rawY - lastY
+                if (dx * dx + dy * dy < 25) {
+                    return false
+                }
+                lastX = event.rawX
+                lastY = event.rawY
+                val finalX = windowConfig.x + dx.toInt()
+                val finalY = windowConfig.y + dy.toInt()
+                windowConfig.x = finalX
+                windowConfig.y = finalY
+                windowManager?.updateViewLayout(flutterView, windowConfig)
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                windowManager?.updateViewLayout(flutterView, windowConfig)
+                return false
+            }
+
+            else -> return false
+        }
+        return false
     }
 }

@@ -103,6 +103,8 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         PopUp.screenOrientation = call.argument<Int>("screenOrientation") ?: PopUp.screenOrientation
         PopUp.closeWhenTapBackButton =
             call.argument<Boolean>("closeWhenTapBackButton") ?: PopUp.closeWhenTapBackButton
+        PopUp.isDraggable =
+            call.argument<Boolean>("isDraggable") ?: PopUp.isDraggable
         activity.startService(i)
         result.success(true)
     }
