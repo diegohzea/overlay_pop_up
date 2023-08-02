@@ -28,6 +28,8 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         var isActive: Boolean = false
         var windowManager: WindowManager? = null
         lateinit var flutterView: FlutterView
+        var lastX = 0f
+        var lastY = 0f
     }
 
     private var channel: MethodChannel? = null
@@ -111,8 +113,6 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         overlayMessageChannel.send(message, reply)
     }
 
-    private var lastX = 0f
-    private var lastY = 0f
     override fun onTouch(v: View?, event: MotionEvent?): Boolean {
         if (!PopUp.isDraggable) return false
         val windowConfig = OverlayService.flutterView.layoutParams as LayoutParams

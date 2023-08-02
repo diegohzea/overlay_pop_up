@@ -78,7 +78,13 @@ void overlayPopUp() {
   returns the overlay status true = open, false = closed
 
   ```dart
-  await OverlayPopUp.closeOverlay();
+  await OverlayPopUp.isActive();
+  ```
+
+  returns the last overlay position if drag is enabled
+
+  ```dart
+  await OverlayPopUp.getOverlayPosition();
   ```
 
   share dynamic data to overlay

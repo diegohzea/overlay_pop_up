@@ -56,8 +56,10 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             "showOverlay" -> showOverlay(call, result)
             "closeOverlay" -> closeOverlay(result)
             "isActive" -> result.success(OverlayService.isActive)
+            "getOverlayPosition" -> getOverlayPosition(result)
             "updateOverlaySize" -> updateOverlaySize(call, result)
             else -> result.notImplemented()
+
         }
     }
 
@@ -140,6 +142,21 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             )
             result.success(true)
         } else result.notImplemented()
+    }
+
+    private fun getOverlayPosition(result: Result) {
+        if (PopUp.isDraggable) {
+            result.success(
+                mapOf(
+                    "overlayPosition" to mapOf(
+                        "x" to (OverlayService.lastX ?: 0),
+                        "y" to (OverlayService.lastY ?: 0)
+                    )
+                )
+            )
+        } else {
+            result.success(null)
+        }
     }
 
     override fun onDetachedFromActivityForConfigChanges() {

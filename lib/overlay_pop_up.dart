@@ -90,6 +90,14 @@ class OverlayPopUp {
   }
 
   ///
+  /// returns the current overlay position if enable drag is enabled
+  ///
+  static Future<Map?> getOverlayPosition() async {
+    final result = await _methodChannel.invokeMethod<Map?>('getOverlayPosition');
+    return result;
+  }
+
+  ///
   /// update overlay layout size
   ///
   static Future<bool> updateOverlaySize({

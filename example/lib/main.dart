@@ -16,6 +16,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool isActive = false;
+  String overlayPosition = '';
 
   @override
   void initState() {
@@ -86,7 +87,20 @@ class _MyAppState extends State<MyApp> {
                 },
                 color: Colors.red[900],
                 child: const Text('Update overlay size', style: TextStyle(color: Colors.white)),
-              )
+              ),
+              MaterialButton(
+                onPressed: () async {
+                  if (await OverlayPopUp.isActive()) {
+                    final position = await OverlayPopUp.getOverlayPosition();
+                    setState(() {
+                      overlayPosition = (position?['overlayPosition'] != null) ? position!['overlayPosition'].toString() : '';
+                    });
+                  }
+                },
+                color: Colors.red[900],
+                child: const Text('Get overlay position', style: TextStyle(color: Colors.white)),
+              ),
+              Text('Current position: $overlayPosition'),
             ],
           ),
         ),

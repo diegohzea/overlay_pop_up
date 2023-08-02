@@ -1,3 +1,7 @@
+## 0.0.6
+
+* now you can get the last overlay position
+
 ## 0.0.5
 
 * now the overlay can be dragged
