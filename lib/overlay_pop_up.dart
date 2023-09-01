@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 StreamController _mssgController = StreamController.broadcast();
@@ -124,12 +125,27 @@ class OverlayPopUp {
   ///
   /// receive the data from flutter
   ///
-  static Stream<dynamic> get dataListener {
+  static Stream<dynamic>? get dataListener {
     _messageChannel.setMessageHandler((mssg) async {
+      if (_mssgController.isClosed) return '';
       _mssgController.add(mssg);
       return mssg;
     });
+
+    if (_mssgController.isClosed) return null;
     return _mssgController.stream;
+  }
+
+  ///
+  /// drain and close data stream controller
+  ///
+  static void stopDataLIstener() {
+    try {
+      _mssgController.stream.drain();
+      _mssgController.close();
+    } catch (e) {
+      debugPrint('[OverlayPopUp] Something wen wrong when close overlay pop up: $e');
+    }
   }
 }
 
