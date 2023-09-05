@@ -1,6 +1,7 @@
 package com.requiemz.overlay_pop_up
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Service
 import android.content.Intent
 import android.graphics.Color
@@ -42,6 +43,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate() {
         super.onCreate()
+        PopUp.loadPreferences(applicationContext)
         validateDartExecutor()
         val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!
         engine.lifecycleChannel.appIsResumed()
@@ -67,12 +69,20 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
             PopUp.width,
             PopUp.height,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
-            if (PopUp.backgroundBehavior == 1) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            if (PopUp.backgroundBehavior == 1) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN else
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSPARENT
         )
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) {
+            windowConfig.flags =
+                windowConfig.flags or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+        }
         windowConfig.gravity = PopUp.verticalAlignment or PopUp.horizontalAlignment
         windowConfig.screenOrientation = PopUp.screenOrientation
         windowManager!!.addView(flutterView, windowConfig)
+        loadLastPosition()
         isActive = true
     }
 
@@ -135,6 +145,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
                 windowConfig.x = finalX
                 windowConfig.y = finalY
                 windowManager?.updateViewLayout(flutterView, windowConfig)
+                saveLastPosition(finalX, finalY)
             }
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -145,5 +156,19 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
             else -> return false
         }
         return false
+    }
+
+    private fun saveLastPosition(x: Int, y: Int) {
+        PopUp.lastX = x
+        PopUp.lastY = y
+        PopUp.savePreferences(applicationContext)
+    }
+
+    private fun loadLastPosition() {
+        if (PopUp.lastY == 0 && PopUp.lastX == 0) return
+        val windowConfig = OverlayService.flutterView.layoutParams as LayoutParams
+        windowConfig.x = PopUp.lastX
+        windowConfig.y = PopUp.lastY
+        windowManager?.updateViewLayout(flutterView, windowConfig)
     }
 }

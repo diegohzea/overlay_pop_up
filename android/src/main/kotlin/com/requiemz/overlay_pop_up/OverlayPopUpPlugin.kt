@@ -24,10 +24,10 @@ import io.flutter.plugin.common.MethodChannel.Result
 
 class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     BasicMessageChannel.MessageHandler<Any?> {
-    private lateinit var channel: MethodChannel
-    private lateinit var context: Context
-    private lateinit var activity: Activity
-    private lateinit var messageChannel: BasicMessageChannel<Any?>
+    private var channel: MethodChannel? = null
+    private var context: Context? = null
+    private var activity: Activity? = null
+    private var messageChannel: BasicMessageChannel<Any?>? = null
 
     companion object {
         const val OVERLAY_CHANNEL_NAME = "overlay_pop_up"
@@ -39,14 +39,14 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, OVERLAY_CHANNEL_NAME)
-        channel.setMethodCallHandler(this)
+        channel?.setMethodCallHandler(this)
         this.context = flutterPluginBinding.applicationContext
         messageChannel = BasicMessageChannel<Any?>(
             flutterPluginBinding.binaryMessenger,
             OVERLAY_MESSAGE_CHANNEL_NAME,
             JSONMessageCodec.INSTANCE
         )
-        messageChannel.setMessageHandler(this)
+        messageChannel?.setMessageHandler(this)
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
@@ -64,25 +64,26 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        channel.setMethodCallHandler(null)
-        messageChannel.setMessageHandler(null)
+        channel?.setMethodCallHandler(null)
+        messageChannel?.setMessageHandler(null)
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+        if (context == null) return
         activity = binding.activity
-        val engineGroup = FlutterEngineGroup(context)
+        val engineGroup = FlutterEngineGroup(context!!)
         val dartEntry = DartExecutor.DartEntrypoint(
             FlutterInjector.instance().flutterLoader().findAppBundlePath(), OVERLAY_POP_UP_ENTRY
         )
-        val engine = engineGroup.createAndRunEngine(context, dartEntry)
+        val engine = engineGroup.createAndRunEngine(context!!, dartEntry)
         FlutterEngineCache.getInstance().put(CACHE_ENGINE_ID, engine)
     }
 
     private fun requestOverlayPermission(result: Result) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val i = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-            i.data = Uri.parse("package:${activity.packageName}")
-            activity.startActivityForResult(i, PERMISSION_CODE)
+            i.data = Uri.parse("package:${activity?.packageName}")
+            activity?.startActivityForResult(i, PERMISSION_CODE)
         } else result.success(true)
     }
 
@@ -107,7 +108,8 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             call.argument<Boolean>("closeWhenTapBackButton") ?: PopUp.closeWhenTapBackButton
         PopUp.isDraggable =
             call.argument<Boolean>("isDraggable") ?: PopUp.isDraggable
-        activity.startService(i)
+        if (context != null) PopUp.savePreferences(context!!)
+        activity?.startService(i)
         result.success(true)
     }
 
@@ -115,7 +117,7 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         if (OverlayService.isActive) {
             val i = Intent(context, OverlayService::class.java)
             i.putExtra("closeOverlay", true)
-            context.stopService(i)
+            context?.stopService(i)
             OverlayService.isActive = false
             result.success(true)
             return
@@ -163,6 +165,16 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+        if (context != null) PopUp.loadPreferences(context!!)
+        if (OverlayService.windowManager != null) {
+            val windowConfig = OverlayService.flutterView.layoutParams
+            windowConfig.width = PopUp.width
+            windowConfig.height = PopUp.height
+            OverlayService.windowManager!!.updateViewLayout(
+                OverlayService.flutterView,
+                windowConfig
+            )
+        }
     }
 
     override fun onDetachedFromActivity() {

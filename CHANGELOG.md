@@ -1,3 +1,11 @@
+## 0.0.8
+
+* now remeber the last overlay position, will be re-open in the last drag position
+
+## 0.0.7
+
+* added method to close overlay data listener
+
 ## 0.0.6
 
 * now you can get the last overlay position

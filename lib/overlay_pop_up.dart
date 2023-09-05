@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-StreamController _mssgController = StreamController.broadcast();
-
-const _methodChannel = MethodChannel('overlay_pop_up');
-const _messageChannel = BasicMessageChannel('overlay_pop_up_mssg', JSONMessageCodec());
-
 class OverlayPopUp {
   OverlayPopUp._();
+
+  static final StreamController _mssgController = StreamController.broadcast();
+
+  static const _methodChannel = MethodChannel('overlay_pop_up');
+  static const _messageChannel = BasicMessageChannel('overlay_pop_up_mssg', JSONMessageCodec());
 
   ///
   /// returns true when overlay permission is alreary granted
