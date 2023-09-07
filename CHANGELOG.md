@@ -1,3 +1,7 @@
+## 0.0.9
+
+* add screen limits to drag pop up to prevet future bugs
+
 ## 0.0.8
 
 * now remeber the last overlay position, will be re-open in the last drag position
