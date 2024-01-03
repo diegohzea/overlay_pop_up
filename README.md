@@ -23,6 +23,23 @@ add this to your AndroidManifest.xml
     </application>
 ```
 
+### Android 14
+
+applications that target SDK 34 and use foreground service should include foregroundServiceType attribute([see documentation](https://developer.android.com/about/versions/14/changes/fgs-types-required)).
+
+```dart
+ <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+ <application>
+        ...
+        <service
+           android:name="com.requiemz.overlay_pop_up.OverlayService"
+           android:exported="false",
+           <!-- add this -->
+           android:foregroundServiceType="camera, dataSync, location, etc" />
+    </application>
+```
+
 ## Flutter implementation
 
 configure your main.dart entry point a widget to display (make sure to add @pragma('vm:entry-point'))

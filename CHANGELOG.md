@@ -1,3 +1,7 @@
+## 1.0.0
+
+* added android 14 espcifications and update readme example.
+
 ## 0.0.9
 
 * add screen limits to drag pop up to prevet future bugs

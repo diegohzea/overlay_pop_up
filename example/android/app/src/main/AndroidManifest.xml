@@ -9,6 +9,6 @@
             </intent-filter>
         </activity>
         <meta-data android:name="flutterEmbedding" android:value="2" />
-        <service android:name="com.requiemz.overlay_pop_up.OverlayService" android:exported="false" />
+        <service android:name="com.requiemz.overlay_pop_up.OverlayService" android:exported="false" android:foregroundServiceType="dataSync" />
     </application>
 </manifest>
