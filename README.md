@@ -34,7 +34,7 @@ applications that target SDK 34 and use foreground service should include foregr
         ...
         <service
            android:name="com.requiemz.overlay_pop_up.OverlayService"
-           android:exported="false",
+           android:exported="false"
            <!-- add this -->
            android:foregroundServiceType="camera, dataSync, location, etc" />
     </application>
