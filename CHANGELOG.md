@@ -1,3 +1,7 @@
+## 1.0.2
+
+* Fix 1.0.1 version error when showing overlay pop up. was added new param to handle the entryPoint method name in showOverlay method.
+
 ## 1.0.0
 
 * added android 14 espcifications and update readme example.

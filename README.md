@@ -34,7 +34,7 @@ applications that target SDK 34 and use foreground service should include foregr
         ...
         <service
            android:name="com.requiemz.overlay_pop_up.OverlayService"
-           android:exported="false",
+           android:exported="false"
            <!-- add this -->
            android:foregroundServiceType="camera, dataSync, location, etc" />
     </application>
@@ -43,6 +43,9 @@ applications that target SDK 34 and use foreground service should include foregr
 ## Flutter implementation
 
 configure your main.dart entry point a widget to display (make sure to add @pragma('vm:entry-point'))
+
+**NOTE:**
+Now you can pass as parameter the dart entry point method name when showOverlay is called
 
 ```dart
 @pragma("vm:entry-point")
@@ -81,6 +84,7 @@ void overlayPopUp() {
 - `screenOrientation` by default orientation is portrait.
 - `closeWhenTapBackButton` by default when user presses back button the overlay no has any action if you pass true then back button will close overlay.
 - `isDraggable`  by default is false therefore the overlay can´t be dragged.
+- `entryPointMethodName` by default is 'overlayPopUp' if you want you can change it
 
   ```dart
   await OverlayPopUp.showOverlay();
@@ -107,8 +111,8 @@ void overlayPopUp() {
   share dynamic data to overlay
 
   ```dart
-  await OverlayPopUp.showOverlay({'data':'hello!'});
-  await OverlayPopUp.showOverlay('hello');
+  await OverlayPopUp.sendToOverlay({'data':'hello!'});
+  await OverlayPopUp.sendToOverlay('hello');
   ```
 
   receive the data from flutter as stream

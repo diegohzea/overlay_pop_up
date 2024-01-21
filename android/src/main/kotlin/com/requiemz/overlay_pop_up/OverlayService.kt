@@ -1,7 +1,6 @@
 package com.requiemz.overlay_pop_up
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.Service
 import android.content.Intent
 import android.graphics.Color
@@ -44,7 +43,8 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
     override fun onCreate() {
         super.onCreate()
         PopUp.loadPreferences(applicationContext)
-        validateDartExecutor()
+        if (PopUp.entryPointName.isBlank()) return
+        validateDartEntryPoint()
         val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!
         engine.lifecycleChannel.appIsResumed()
         flutterView =
@@ -92,13 +92,13 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         isActive = false
     }
 
-    private fun validateDartExecutor() {
+    private fun validateDartEntryPoint() {
         val dartExecutor = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
         if (dartExecutor == null) {
             val engineGroup = FlutterEngineGroup(applicationContext)
             val dartEntry = DartExecutor.DartEntrypoint(
                 FlutterInjector.instance().flutterLoader().findAppBundlePath(),
-                OverlayPopUpPlugin.OVERLAY_POP_UP_ENTRY
+                PopUp.entryPointName
             )
             val engine = engineGroup.createAndRunEngine(applicationContext, dartEntry)
             FlutterEngineCache.getInstance().put(OverlayPopUpPlugin.CACHE_ENGINE_ID, engine)

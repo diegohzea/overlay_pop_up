@@ -17,6 +17,7 @@ object PopUp {
     var isDraggable = false
     var lastX = 0
     var lastY = 0
+    var entryPointName: String = ""
 
 
     fun savePreferences(context: Context) {
@@ -35,6 +36,7 @@ object PopUp {
         sharedPref.edit().putBoolean("isDraggable", isDraggable).apply()
         sharedPref.edit().putInt("lastX", lastX).apply()
         sharedPref.edit().putInt("lastY", lastY).apply()
+        sharedPref.edit().putString("entryPointName", entryPointName).apply()
     }
 
     fun loadPreferences(context: Context) {
@@ -54,5 +56,6 @@ object PopUp {
         isDraggable = sharedPref.getBoolean("isDraggable", isDraggable)
         lastX = sharedPref.getInt("lastX", lastX)
         lastY = sharedPref.getInt("lastY", lastY)
+        entryPointName = sharedPref.getString("entryPointName", entryPointName) ?: ""
     }
 }

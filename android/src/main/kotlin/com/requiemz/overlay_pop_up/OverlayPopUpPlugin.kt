@@ -33,7 +33,7 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         const val OVERLAY_CHANNEL_NAME = "overlay_pop_up"
         const val OVERLAY_MESSAGE_CHANNEL_NAME = "overlay_pop_up_mssg"
         const val CACHE_ENGINE_ID = "overlay_pop_up_engine_id"
-        const val OVERLAY_POP_UP_ENTRY = "overlayPopUp"
+        const val OVERLAY_POP_UP_ENTRY_BY_DEFAULT = "overlayPopUp"
         const val PERMISSION_CODE = 1996
     }
 
@@ -69,14 +69,7 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        if (context == null) return
         activity = binding.activity
-        val engineGroup = FlutterEngineGroup(context!!)
-        val dartEntry = DartExecutor.DartEntrypoint(
-            FlutterInjector.instance().flutterLoader().findAppBundlePath(), OVERLAY_POP_UP_ENTRY
-        )
-        val engine = engineGroup.createAndRunEngine(context!!, dartEntry)
-        FlutterEngineCache.getInstance().put(CACHE_ENGINE_ID, engine)
     }
 
     private fun requestOverlayPermission(result: Result) {
@@ -108,6 +101,8 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             call.argument<Boolean>("closeWhenTapBackButton") ?: PopUp.closeWhenTapBackButton
         PopUp.isDraggable =
             call.argument<Boolean>("isDraggable") ?: PopUp.isDraggable
+        PopUp.entryPointName =
+            call.argument<String>("entryPointName") ?: OVERLAY_POP_UP_ENTRY_BY_DEFAULT
         if (context != null) PopUp.savePreferences(context!!)
         activity?.startService(i)
         result.success(true)
