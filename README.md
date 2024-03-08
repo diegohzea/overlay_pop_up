@@ -6,7 +6,7 @@ A new Flutter plugin to display pop ups or screens over other apps in Android ev
 
 # Demo
 
-[![Preview](https://github.com/diegohzea/diegohzea/raw/main/overlay_pop_up_demo.gif)](https://davigmacode.github.io/flutter_animated_checkmark)
+[![Preview](https://github.com/diegohzea/diegohzea/raw/main/overlay_pop_up_demo.gif)](https://github.com/diegohzea/diegohzea/raw/main/overlay_pop_up_demo.gif)
 
 ## Android
 
