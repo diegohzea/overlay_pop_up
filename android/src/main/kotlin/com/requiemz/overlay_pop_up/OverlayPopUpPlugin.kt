@@ -104,7 +104,13 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         PopUp.entryPointName =
             call.argument<String>("entryPointName") ?: OVERLAY_POP_UP_ENTRY_BY_DEFAULT
         if (context != null) PopUp.savePreferences(context!!)
-        activity?.startService(i)
+        
+        if (activity == null) {
+            context?.applicationContext?.startService(i)
+        } else {
+            activity?.startService(i)
+        }
+        
         result.success(true)
     }
 
