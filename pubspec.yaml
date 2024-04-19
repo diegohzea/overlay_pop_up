@@ -1,6 +1,6 @@
 name: overlay_pop_up
 description: A new Flutter plugin to display pop ups or screens over other apps in Android even when app is closed or killed.
-version: 1.0.2
+version: 1.0.3
 homepage: https://github.com/diegohzea/overlay_pop_up
 
 environment:

@@ -148,6 +148,7 @@ class OverlayWidget extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             FloatingActionButton(
+              shape: const CircleBorder(),
               backgroundColor: Colors.red[900],
               elevation: 12,
               onPressed: () async => await OverlayPopUp.closeOverlay(),
