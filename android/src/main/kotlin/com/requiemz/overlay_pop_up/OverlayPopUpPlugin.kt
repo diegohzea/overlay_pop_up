@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.embedding.engine.FlutterEngineGroup
@@ -20,14 +21,17 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.PluginRegistry
+import io.flutter.plugin.common.PluginRegistry.ActivityResultListener
 
 
 class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
-    BasicMessageChannel.MessageHandler<Any?> {
+    BasicMessageChannel.MessageHandler<Any?>, PluginRegistry.ActivityResultListener {
     private var channel: MethodChannel? = null
     private var context: Context? = null
     private var activity: Activity? = null
     private var messageChannel: BasicMessageChannel<Any?>? = null
+    private var pendingResult: Result? = null
 
     companion object {
         const val OVERLAY_CHANNEL_NAME = "overlay_pop_up"
@@ -70,10 +74,12 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         activity = binding.activity
+        binding.addActivityResultListener(this)
     }
 
     private fun requestOverlayPermission(result: Result) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            pendingResult = result
             val i = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
             i.data = Uri.parse("package:${activity?.packageName}")
             activity?.startActivityForResult(i, PERMISSION_CODE)
@@ -104,13 +110,13 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         PopUp.entryPointName =
             call.argument<String>("entryPointName") ?: OVERLAY_POP_UP_ENTRY_BY_DEFAULT
         if (context != null) PopUp.savePreferences(context!!)
-        
+
         if (activity == null) {
             context?.applicationContext?.startService(i)
         } else {
             activity?.startService(i)
         }
-        
+
         result.success(true)
     }
 
@@ -179,5 +185,16 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onDetachedFromActivity() {
+        activity = null
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+        if (requestCode == PERMISSION_CODE) {
+            pendingResult?.success(Settings.canDrawOverlays(activity))
+            return true
+        }
+        pendingResult?.success(false)
+        return false
     }
 }

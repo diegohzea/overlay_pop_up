@@ -1,3 +1,7 @@
+## 1.0.4
+
++ Fixed overlay permission request
+
 ## 1.0.3
 
 + Added capability to show overlay when main app is closed (context is null)

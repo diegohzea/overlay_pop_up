@@ -16,6 +16,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool isActive = false;
+  bool permissionStatus = false;
   String overlayPosition = '';
 
   @override
@@ -33,12 +34,39 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: const Text('Flutter overlay pop up'), backgroundColor: Colors.red[900]),
-        body: Center(
+        appBar: AppBar(
+            title: const Text(
+              'Flutter overlay pop up',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.red[900]),
+        body: SizedBox(
+          width: double.maxFinite,
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text('Is active: $isActive'),
+              const SizedBox(height: 30),
+              Text(
+                'Permission status: ${permissionStatus ? 'enabled' : 'disabled'}',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              MaterialButton(
+                onPressed: () async {
+                  permissionStatus = await OverlayPopUp.requestPermission();
+                  setState(() {});
+                },
+                color: Colors.red[900],
+                child: const Text(
+                  'Request overlay permission',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Is active: $isActive',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               MaterialButton(
                 onPressed: () async {
                   final permission = await OverlayPopUp.checkPermission();
@@ -62,43 +90,52 @@ class _MyAppState extends State<MyApp> {
                       });
                     }
                   } else {
-                    await OverlayPopUp.requestPermission();
+                    permissionStatus = await OverlayPopUp.requestPermission();
                     setState(() {});
                   }
                 },
                 color: Colors.red[900],
-                child: const Text('Show overlay', style: TextStyle(color: Colors.white)),
-              ),
-              const SizedBox(height: 14),
-              MaterialButton(
-                onPressed: () async {
-                  if (await OverlayPopUp.isActive()) {
-                    await OverlayPopUp.sendToOverlay({'mssg': 'Hello from dart!'});
-                  }
-                },
-                color: Colors.red[900],
-                child: const Text('Send data', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Show overlay',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               MaterialButton(
                 onPressed: () async {
                   if (await OverlayPopUp.isActive()) {
-                    await OverlayPopUp.updateOverlaySize(width: 500, height: 500);
+                    await OverlayPopUp.sendToOverlay(
+                        {'mssg': 'Hello from dart!'});
                   }
                 },
                 color: Colors.red[900],
-                child: const Text('Update overlay size', style: TextStyle(color: Colors.white)),
+                child: const Text('Send data',
+                    style: TextStyle(color: Colors.white)),
+              ),
+              MaterialButton(
+                onPressed: () async {
+                  if (await OverlayPopUp.isActive()) {
+                    await OverlayPopUp.updateOverlaySize(
+                        width: 500, height: 500);
+                  }
+                },
+                color: Colors.red[900],
+                child: const Text('Update overlay size',
+                    style: TextStyle(color: Colors.white)),
               ),
               MaterialButton(
                 onPressed: () async {
                   if (await OverlayPopUp.isActive()) {
                     final position = await OverlayPopUp.getOverlayPosition();
                     setState(() {
-                      overlayPosition = (position?['overlayPosition'] != null) ? position!['overlayPosition'].toString() : '';
+                      overlayPosition = (position?['overlayPosition'] != null)
+                          ? position!['overlayPosition'].toString()
+                          : '';
                     });
                   }
                 },
                 color: Colors.red[900],
-                child: const Text('Get overlay position', style: TextStyle(color: Colors.white)),
+                child: const Text('Get overlay position',
+                    style: TextStyle(color: Colors.white)),
               ),
               Text('Current position: $overlayPosition'),
             ],
@@ -152,7 +189,8 @@ class OverlayWidget extends StatelessWidget {
               backgroundColor: Colors.red[900],
               elevation: 12,
               onPressed: () async => await OverlayPopUp.closeOverlay(),
-              child: const Text('X', style: TextStyle(color: Colors.white, fontSize: 20)),
+              child: const Text('X',
+                  style: TextStyle(color: Colors.white, fontSize: 20)),
             ),
           ],
         ),
