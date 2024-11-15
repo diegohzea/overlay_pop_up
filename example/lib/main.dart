@@ -22,11 +22,19 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    overlayStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      getOverlayStatus();
+      getPermissionStatus();
+    });
   }
 
-  Future<void> overlayStatus() async {
+  Future<void> getOverlayStatus() async {
     isActive = await OverlayPopUp.isActive();
+    setState(() {});
+  }
+
+  Future<void> getPermissionStatus() async {
+    permissionStatus = await OverlayPopUp.checkPermission();
     setState(() {});
   }
 
@@ -78,6 +86,7 @@ class _MyAppState extends State<MyApp> {
                         screenOrientation: ScreenOrientation.portrait,
                         closeWhenTapBackButton: true,
                         isDraggable: true,
+                        entryPointMethodName: 'customOverlay',
                       );
                       setState(() {
                         isActive = isActive;
@@ -147,10 +156,11 @@ class _MyAppState extends State<MyApp> {
 }
 
 ///
-/// the name is required to be `overlayPopUp` and has `@pragma("vm:entry-point")`
+/// Is required has `@pragma("vm:entry-point")` and the method name by default is `overlayPopUp`
+/// if you change the method name you should pass it as `entryPointMethodName` in showOverlay method
 ///
 @pragma("vm:entry-point")
-void overlayPopUp() {
+void customOverlay() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,

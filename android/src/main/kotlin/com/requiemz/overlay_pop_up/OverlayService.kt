@@ -43,7 +43,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
     override fun onCreate() {
         super.onCreate()
         PopUp.loadPreferences(applicationContext)
-        if (PopUp.entryPointName.isBlank()) return
+        if (PopUp.entryPointMethodName.isBlank()) return
         validateDartEntryPoint()
         val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!
         engine.lifecycleChannel.appIsResumed()
@@ -98,7 +98,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
             val engineGroup = FlutterEngineGroup(applicationContext)
             val dartEntry = DartExecutor.DartEntrypoint(
                 FlutterInjector.instance().flutterLoader().findAppBundlePath(),
-                PopUp.entryPointName
+                PopUp.entryPointMethodName
             )
             val engine = engineGroup.createAndRunEngine(applicationContext, dartEntry)
             FlutterEngineCache.getInstance().put(OverlayPopUpPlugin.CACHE_ENGINE_ID, engine)

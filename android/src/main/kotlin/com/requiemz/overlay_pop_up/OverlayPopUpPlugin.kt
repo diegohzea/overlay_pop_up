@@ -107,8 +107,8 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             call.argument<Boolean>("closeWhenTapBackButton") ?: PopUp.closeWhenTapBackButton
         PopUp.isDraggable =
             call.argument<Boolean>("isDraggable") ?: PopUp.isDraggable
-        PopUp.entryPointName =
-            call.argument<String>("entryPointName") ?: OVERLAY_POP_UP_ENTRY_BY_DEFAULT
+        PopUp.entryPointMethodName =
+            call.argument<String>("entryPointMethodName") ?: OVERLAY_POP_UP_ENTRY_BY_DEFAULT
         if (context != null) PopUp.savePreferences(context!!)
 
         if (activity == null) {

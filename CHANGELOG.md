@@ -1,3 +1,7 @@
+## 1.0.5
+
++ Added entryPointMethodName param in showOverlayMethod
+
 ## 1.0.4
 
 + Fixed overlay permission request
