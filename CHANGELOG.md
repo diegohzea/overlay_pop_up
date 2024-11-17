@@ -1,3 +1,7 @@
+## 1.0.5+1
+
++ was fixed simultaneously request permission
+
 ## 1.0.5
 
 + Added entryPointMethodName param in showOverlayMethod
