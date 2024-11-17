@@ -79,11 +79,18 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
 
     private fun requestOverlayPermission(result: Result) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (pendingResult != null) {
+                result.error("ERROR", "A permission request is already in progress.", null)
+                return
+            }
+
             pendingResult = result
             val i = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
             i.data = Uri.parse("package:${activity?.packageName}")
             activity?.startActivityForResult(i, PERMISSION_CODE)
-        } else result.success(true)
+        } else {
+            result.success(true)
+        }
     }
 
     private fun checkPermission(): Boolean {
@@ -191,10 +198,17 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         if (requestCode == PERMISSION_CODE) {
-            pendingResult?.success(Settings.canDrawOverlays(activity))
+            pendingResult?.let {
+                it.success(Settings.canDrawOverlays(activity))
+                pendingResult = null // Clear the result to prevent multiple submissions
+            }
             return true
         }
-        pendingResult?.success(false)
+
+        pendingResult?.let {
+            it.success(false)
+            pendingResult = null
+        }
         return false
     }
 }
