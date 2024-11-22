@@ -43,24 +43,28 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
     override fun onCreate() {
         super.onCreate()
         PopUp.loadPreferences(applicationContext)
-        if (PopUp.entryPointMethodName.isBlank()) return
         validateDartEntryPoint()
-        val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!
+        if (PopUp.entryPointMethodName.isBlank()) {
+            println("[OverlayPopUp] EntryPointMethodName is blank.")
+            return
+        }
+        val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
+        if (engine == null) {
+            println("[OverlayPopUp] Flutter engine is not initialized.")
+            return
+        }
         engine.lifecycleChannel.appIsResumed()
-        flutterView =
-            object : FlutterView(applicationContext, FlutterTextureView(applicationContext)) {
-                override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-                    return if (event.keyCode == KeyEvent.KEYCODE_BACK && PopUp.closeWhenTapBackButton) {
-                        windowManager?.removeView(flutterView)
-                        stopService(Intent(baseContext, OverlayService::class.java))
-                        isActive = false
-                        true
-                    } else super.dispatchKeyEvent(event)
-                }
+        flutterView = object : FlutterView(applicationContext, FlutterTextureView(applicationContext)) {
+            override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+                return if (event.keyCode == KeyEvent.KEYCODE_BACK && PopUp.closeWhenTapBackButton) {
+                    windowManager?.removeView(flutterView)
+                    stopService(Intent(baseContext, OverlayService::class.java))
+                    isActive = false
+                    true
+                } else super.dispatchKeyEvent(event)
             }
-        flutterView.attachToFlutterEngine(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!
-        )
+        }
+        flutterView.attachToFlutterEngine(engine)
         flutterView.fitsSystemWindows = true
         flutterView.setBackgroundColor(Color.TRANSPARENT)
         flutterView.setOnTouchListener(this)
@@ -74,14 +78,13 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
             PixelFormat.TRANSPARENT
         )
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) {
-            windowConfig.flags =
-                windowConfig.flags or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            windowConfig.flags = windowConfig.flags or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         }
         windowConfig.gravity = PopUp.verticalAlignment or PopUp.horizontalAlignment
         windowConfig.screenOrientation = PopUp.screenOrientation
-        windowManager!!.addView(flutterView, windowConfig)
+        windowManager?.addView(flutterView, windowConfig)
         loadLastPosition()
         isActive = true
     }
@@ -93,25 +96,19 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
     }
 
     private fun validateDartEntryPoint() {
-        val dartExecutor = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
-        if (dartExecutor == null) {
+        val cachedEngine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
+        if (cachedEngine == null) {
+            println("[OverlayPopUp] Creating a new Flutter engine and adding it to the cache.")
             val engineGroup = FlutterEngineGroup(applicationContext)
             val dartEntry = DartExecutor.DartEntrypoint(
                 FlutterInjector.instance().flutterLoader().findAppBundlePath(),
-                PopUp.entryPointMethodName
+                PopUp.entryPointMethodName.ifBlank { OverlayPopUpPlugin.OVERLAY_POP_UP_ENTRY_BY_DEFAULT }
             )
             val engine = engineGroup.createAndRunEngine(applicationContext, dartEntry)
             FlutterEngineCache.getInstance().put(OverlayPopUpPlugin.CACHE_ENGINE_ID, engine)
+        } else {
+            println("[OverlayPopUp] FlutterEngineCache already contains an engine for CACHE_ENGINE_ID.")
         }
-        channel = MethodChannel(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!.dartExecutor,
-            OverlayPopUpPlugin.OVERLAY_CHANNEL_NAME
-        )
-        overlayMessageChannel = BasicMessageChannel(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!.dartExecutor,
-            OverlayPopUpPlugin.OVERLAY_MESSAGE_CHANNEL_NAME,
-            JSONMessageCodec.INSTANCE
-        )
     }
 
     override fun onMessage(message: Any?, reply: BasicMessageChannel.Reply<Any?>) {
