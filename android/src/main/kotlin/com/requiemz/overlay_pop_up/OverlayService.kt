@@ -12,16 +12,11 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams
-import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterTextureView
 import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngineCache
-import io.flutter.embedding.engine.FlutterEngineGroup
-import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.BasicMessageChannel
 import io.flutter.plugin.common.JSONMessageCodec
-import io.flutter.plugin.common.MethodChannel
-
 
 class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View.OnTouchListener {
     companion object {
@@ -32,7 +27,6 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         var lastY = 0f
     }
 
-    private var channel: MethodChannel? = null
     private lateinit var overlayMessageChannel: BasicMessageChannel<Any?>
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -43,14 +37,10 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
     override fun onCreate() {
         super.onCreate()
         PopUp.loadPreferences(applicationContext)
-        validateDartEntryPoint()
-        if (PopUp.entryPointMethodName.isBlank()) {
-            println("[OverlayPopUp] EntryPointMethodName is blank.")
-            return
-        }
         val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
         if (engine == null) {
-            println("[OverlayPopUp] Flutter engine is not initialized.")
+            println("[OverlayPopUp] FlutterEngine not available in cache. Stopping service.")
+            stopSelf()
             return
         }
         engine.lifecycleChannel.appIsResumed()
@@ -72,7 +62,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         val windowConfig = WindowManager.LayoutParams(
             PopUp.width,
             PopUp.height,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
             if (PopUp.backgroundBehavior == 1) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN else
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSPARENT
@@ -87,6 +77,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         windowManager?.addView(flutterView, windowConfig)
         loadLastPosition()
         isActive = true
+        println("[OverlayPopUp] Overlay successfully initialized.")
     }
 
     override fun onDestroy() {
@@ -95,40 +86,29 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         isActive = false
     }
 
-    private fun validateDartEntryPoint() {
-        val cachedEngine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
-        if (cachedEngine == null) {
-            println("[OverlayPopUp] Creating a new Flutter engine and adding it to the cache.")
-            val engineGroup = FlutterEngineGroup(applicationContext)
-            val dartEntry = DartExecutor.DartEntrypoint(
-                FlutterInjector.instance().flutterLoader().findAppBundlePath(),
-                PopUp.entryPointMethodName.ifBlank { OverlayPopUpPlugin.OVERLAY_POP_UP_ENTRY_BY_DEFAULT }
-            )
-            val engine = engineGroup.createAndRunEngine(applicationContext, dartEntry)
-            FlutterEngineCache.getInstance().put(OverlayPopUpPlugin.CACHE_ENGINE_ID, engine)
-        } else {
-            println("[OverlayPopUp] FlutterEngineCache already contains an engine for CACHE_ENGINE_ID.")
-        }
-    }
-
     override fun onMessage(message: Any?, reply: BasicMessageChannel.Reply<Any?>) {
-        val overlayMessageChannel = BasicMessageChannel(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!.dartExecutor,
-            OverlayPopUpPlugin.OVERLAY_MESSAGE_CHANNEL_NAME,
-            JSONMessageCodec.INSTANCE
-        )
-        overlayMessageChannel.send(message, reply)
+        val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
+        if (engine != null) {
+            val overlayMessageChannel = BasicMessageChannel(
+                engine.dartExecutor,
+                OverlayPopUpPlugin.OVERLAY_MESSAGE_CHANNEL_NAME,
+                JSONMessageCodec.INSTANCE
+            )
+            overlayMessageChannel.send(message, reply)
+        } else {
+            println("[OverlayPopUp] FlutterEngine not available in cache.")
+            reply.reply(null)
+        }
     }
 
     override fun onTouch(v: View?, event: MotionEvent?): Boolean {
         if (!PopUp.isDraggable) return false
-        val windowConfig = OverlayService.flutterView.layoutParams as LayoutParams
+        val windowConfig = flutterView.layoutParams as LayoutParams
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
                 lastX = event.rawX
                 lastY = event.rawY
             }
-
             MotionEvent.ACTION_MOVE -> {
                 val dx = event.rawX - lastX
                 val dy = event.rawY - lastY
@@ -163,7 +143,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
 
     private fun loadLastPosition() {
         if (PopUp.lastY == 0 && PopUp.lastX == 0) return
-        val windowConfig = OverlayService.flutterView.layoutParams as LayoutParams
+        val windowConfig = flutterView.layoutParams as LayoutParams
         windowConfig.x = PopUp.lastX
         windowConfig.y = PopUp.lastY
         windowManager?.updateViewLayout(flutterView, windowConfig)

@@ -119,6 +119,9 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
             call.argument<String>("entryPointMethodName") ?: OVERLAY_POP_UP_ENTRY_BY_DEFAULT
         if (context != null) PopUp.savePreferences(context!!)
 
+        // Initialize and cache the FlutterEngine before starting the service
+        initializeAndCacheFlutterEngine()
+
         if (activity == null) {
             context?.applicationContext?.startService(i)
         } else {
@@ -126,6 +129,22 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
         }
 
         result.success(true)
+    }
+
+    private fun initializeAndCacheFlutterEngine() {
+        val cachedEngine = FlutterEngineCache.getInstance().get(CACHE_ENGINE_ID)
+        if (cachedEngine == null) {
+            println("[OverlayPopUpPlugin] Creating and caching FlutterEngine.")
+            val engineGroup = FlutterEngineGroup(context!!)
+            val dartEntryPoint = DartExecutor.DartEntrypoint(
+                FlutterInjector.instance().flutterLoader().findAppBundlePath(),
+                PopUp.entryPointMethodName
+            )
+            val flutterEngine = engineGroup.createAndRunEngine(context!!, dartEntryPoint)
+            FlutterEngineCache.getInstance().put(CACHE_ENGINE_ID, flutterEngine)
+        } else {
+            println("[OverlayPopUpPlugin] FlutterEngine already cached.")
+        }
     }
 
     private fun closeOverlay(result: Result) {
@@ -141,8 +160,14 @@ class OverlayPopUpPlugin : FlutterPlugin, MethodCallHandler, ActivityAware,
     }
 
     override fun onMessage(message: Any?, reply: BasicMessageChannel.Reply<Any?>) {
+        val engine = FlutterEngineCache.getInstance().get(CACHE_ENGINE_ID)
+        if (engine == null) {
+            println("[OverlayPopUpPlugin] FlutterEngineCache returned null for CACHE_ENGINE_ID")
+            reply.reply(null) // Respond to the Dart side with an error or null
+            return
+        }
         val overlayMessageChannel = BasicMessageChannel(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!.dartExecutor,
+            engine.dartExecutor,
             OVERLAY_MESSAGE_CHANNEL_NAME,
             JSONMessageCodec.INSTANCE
         )
