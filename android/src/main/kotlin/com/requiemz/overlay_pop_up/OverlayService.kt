@@ -12,16 +12,11 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.WindowManager.LayoutParams
-import io.flutter.FlutterInjector
 import io.flutter.embedding.android.FlutterTextureView
 import io.flutter.embedding.android.FlutterView
 import io.flutter.embedding.engine.FlutterEngineCache
-import io.flutter.embedding.engine.FlutterEngineGroup
-import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.BasicMessageChannel
 import io.flutter.plugin.common.JSONMessageCodec
-import io.flutter.plugin.common.MethodChannel
-
 
 class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View.OnTouchListener {
     companion object {
@@ -32,7 +27,6 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         var lastY = 0f
     }
 
-    private var channel: MethodChannel? = null
     private lateinit var overlayMessageChannel: BasicMessageChannel<Any?>
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -43,24 +37,24 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
     override fun onCreate() {
         super.onCreate()
         PopUp.loadPreferences(applicationContext)
-        if (PopUp.entryPointMethodName.isBlank()) return
-        validateDartEntryPoint()
-        val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!
+        val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
+        if (engine == null) {
+            println("[OverlayPopUp] FlutterEngine not available in cache. Stopping service.")
+            stopSelf()
+            return
+        }
         engine.lifecycleChannel.appIsResumed()
-        flutterView =
-            object : FlutterView(applicationContext, FlutterTextureView(applicationContext)) {
-                override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-                    return if (event.keyCode == KeyEvent.KEYCODE_BACK && PopUp.closeWhenTapBackButton) {
-                        windowManager?.removeView(flutterView)
-                        stopService(Intent(baseContext, OverlayService::class.java))
-                        isActive = false
-                        true
-                    } else super.dispatchKeyEvent(event)
-                }
+        flutterView = object : FlutterView(applicationContext, FlutterTextureView(applicationContext)) {
+            override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+                return if (event.keyCode == KeyEvent.KEYCODE_BACK && PopUp.closeWhenTapBackButton) {
+                    windowManager?.removeView(flutterView)
+                    stopService(Intent(baseContext, OverlayService::class.java))
+                    isActive = false
+                    true
+                } else super.dispatchKeyEvent(event)
             }
-        flutterView.attachToFlutterEngine(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!
-        )
+        }
+        flutterView.attachToFlutterEngine(engine)
         flutterView.fitsSystemWindows = true
         flutterView.setBackgroundColor(Color.TRANSPARENT)
         flutterView.setOnTouchListener(this)
@@ -68,22 +62,22 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         val windowConfig = WindowManager.LayoutParams(
             PopUp.width,
             PopUp.height,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
             if (PopUp.backgroundBehavior == 1) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN else
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
             PixelFormat.TRANSPARENT
         )
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) {
-            windowConfig.flags =
-                windowConfig.flags or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            windowConfig.flags = windowConfig.flags or WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
         }
         windowConfig.gravity = PopUp.verticalAlignment or PopUp.horizontalAlignment
         windowConfig.screenOrientation = PopUp.screenOrientation
-        windowManager!!.addView(flutterView, windowConfig)
+        windowManager?.addView(flutterView, windowConfig)
         loadLastPosition()
         isActive = true
+        println("[OverlayPopUp] Overlay successfully initialized.")
     }
 
     override fun onDestroy() {
@@ -92,46 +86,29 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
         isActive = false
     }
 
-    private fun validateDartEntryPoint() {
-        val dartExecutor = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
-        if (dartExecutor == null) {
-            val engineGroup = FlutterEngineGroup(applicationContext)
-            val dartEntry = DartExecutor.DartEntrypoint(
-                FlutterInjector.instance().flutterLoader().findAppBundlePath(),
-                PopUp.entryPointMethodName
-            )
-            val engine = engineGroup.createAndRunEngine(applicationContext, dartEntry)
-            FlutterEngineCache.getInstance().put(OverlayPopUpPlugin.CACHE_ENGINE_ID, engine)
-        }
-        channel = MethodChannel(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!.dartExecutor,
-            OverlayPopUpPlugin.OVERLAY_CHANNEL_NAME
-        )
-        overlayMessageChannel = BasicMessageChannel(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!.dartExecutor,
-            OverlayPopUpPlugin.OVERLAY_MESSAGE_CHANNEL_NAME,
-            JSONMessageCodec.INSTANCE
-        )
-    }
-
     override fun onMessage(message: Any?, reply: BasicMessageChannel.Reply<Any?>) {
-        val overlayMessageChannel = BasicMessageChannel(
-            FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)!!.dartExecutor,
-            OverlayPopUpPlugin.OVERLAY_MESSAGE_CHANNEL_NAME,
-            JSONMessageCodec.INSTANCE
-        )
-        overlayMessageChannel.send(message, reply)
+        val engine = FlutterEngineCache.getInstance().get(OverlayPopUpPlugin.CACHE_ENGINE_ID)
+        if (engine != null) {
+            val overlayMessageChannel = BasicMessageChannel(
+                engine.dartExecutor,
+                OverlayPopUpPlugin.OVERLAY_MESSAGE_CHANNEL_NAME,
+                JSONMessageCodec.INSTANCE
+            )
+            overlayMessageChannel.send(message, reply)
+        } else {
+            println("[OverlayPopUp] FlutterEngine not available in cache.")
+            reply.reply(null)
+        }
     }
 
     override fun onTouch(v: View?, event: MotionEvent?): Boolean {
         if (!PopUp.isDraggable) return false
-        val windowConfig = OverlayService.flutterView.layoutParams as LayoutParams
+        val windowConfig = flutterView.layoutParams as LayoutParams
         when (event?.action) {
             MotionEvent.ACTION_DOWN -> {
                 lastX = event.rawX
                 lastY = event.rawY
             }
-
             MotionEvent.ACTION_MOVE -> {
                 val dx = event.rawX - lastX
                 val dy = event.rawY - lastY
@@ -166,7 +143,7 @@ class OverlayService : Service(), BasicMessageChannel.MessageHandler<Any?>, View
 
     private fun loadLastPosition() {
         if (PopUp.lastY == 0 && PopUp.lastX == 0) return
-        val windowConfig = OverlayService.flutterView.layoutParams as LayoutParams
+        val windowConfig = flutterView.layoutParams as LayoutParams
         windowConfig.x = PopUp.lastX
         windowConfig.y = PopUp.lastY
         windowManager?.updateViewLayout(flutterView, windowConfig)
