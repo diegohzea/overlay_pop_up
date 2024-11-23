@@ -1,3 +1,7 @@
+## 1.0.5+2
+
++ Fixed null pointer error in the first pop up initialization
+
 ## 1.0.5+1
 
 + was fixed simultaneously request permission
